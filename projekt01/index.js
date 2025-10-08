@@ -1,6 +1,5 @@
 import http from "node:http";
 import fs from "node:fs";
-import { RedirectHandler } from "undici-types";
 
 const port = 8000;
 
