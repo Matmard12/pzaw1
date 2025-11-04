@@ -1,12 +1,23 @@
-<%- include("head.partial.ejs") %>
-
-<main>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
   <h1><%= title %></h1>
-  <ul id="categories">
-    <% categories.forEach(function(category){ %>
-    <li><a href="/cards/<%= category.id %>"><%= category.name %></a></li>
-    <% }) %>
-  </ul>
-</main>
 
-<%- include("foot.partial.ejs") %>
+  <% if (categories.length === 0) { %>
+    <p>Brak kategorii przepisów.</p>
+  <% } else { %>
+    <ul>
+      <% categories.forEach(category => { %>
+        <li>
+          <a href="/recipes/<%= category.id %>"><%= category.name %></a>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+</body>
+</html>
