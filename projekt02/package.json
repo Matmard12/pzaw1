@@ -1,7 +1,7 @@
 {
-  "name": "projekt03-recipes",
+  "name": "projekt02-przepisy",
   "version": "1.0.0",
-  "description": "Simple Cooking Recipes App (Express + EJS + SQLite)",
+  "description": "strona z prostymi przepisami kuchennymi",
   "main": "index.js",
   "type": "module",
   "scripts": {
