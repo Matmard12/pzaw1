@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/style.css">
+  
+</head>
+<body>
+  <h1>Dodaj nowy przepis</h1>
+
+
+  <form action="/recipes/<%= category.id %>/new" method="POST">
+    <label>Nazwa przepisu:<br>
+      <input type="text" name="title" value="<%= title || '' %>">
+    </label><br><br>
+
+    <label>Składniki:<br>
+      <textarea name="ingredients" rows="4" cols="40" style="resize: none;"><%= ingredients || '' %></textarea>
+    </label><br><br>
+
+    <label>Instrukcje:<br>
+      <textarea name="instructions" rows="6" cols="40" style="resize: none;"><%= instructions || '' %></textarea>
+    </label><br><br>
+
+    <button type="submit">Zapisz przepis</button>
+  </form>
+
+  <a href="/recipes/<%= category.id %>">Powrót</a>
+</body>
+</html>
