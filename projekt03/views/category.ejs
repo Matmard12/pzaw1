@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title><%= category.name %> - Przepisy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1><%= category.name %></h1>
+
+    <% if (category.recipes.length === 0) { %>
+      <p>Brak przepisów w tej kategorii.</p>
+    <% } else { %>
+      <% category.recipes.forEach(recipe => { %>
+        <div class="recipe">
+          <h3><%= recipe.title %></h3>
+          <p><strong>Składniki:</strong><br><%= recipe.ingredients %></p>
+          <p><strong>Instrukcje:</strong><br><%= recipe.instructions %></p>
+
+          <a class="btn btn-edit" href="/recipes/<%= category.id %>/<%= recipe.id %>/edit">Edytuj</a>
+
+          <form action="/recipes/<%= category.id %>/<%= recipe.id %>/delete" method="POST" style="display:inline;">
+            <button class="btn btn-delete" type="submit" onclick="return confirm('Czy na pewno chcesz usunąć ten przepis?')">Usuń</button>
+          </form>
+        </div>
+      <% }) %>
+    <% } %>
+
+    <br>
+    <a class="btn btn-add" href="/recipes/<%= category.id %>/new">Dodaj nowy przepis</a>
+    <br><br>
+    <a href="/recipes">Powrót do kategorii</a>
+  </div>
+</body>
+</html>
