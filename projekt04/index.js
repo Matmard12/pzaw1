@@ -1,25 +1,41 @@
+console.log("PEPPER =", process.env.PEPPER);
 import express from "express";
 import morgan from "morgan";
-import recipes from "./models/recipe.js";
+import cookieParser from "cookie-parser";
 
-const port = 8000;
+import recipes from "./models/recipe.js";
+import auth from "./controllers/auth.js";
+import * as session from "./models/session.js";
 
 const app = express();
+const port = 8000;
+
+
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
+app.use(cookieParser());
+app.use(session.sessionHandler);
 
 
-app.get("/", (req, res) => {
-  res.redirect("/recipes");
-});
-
-function log_request(req, res, next) {
+app.use((req, res, next) => {
   console.log(`Request ${req.method} ${req.path}`);
   next();
-}
-app.use(log_request);
+});
+
+
+const authRouter = express.Router();
+authRouter.get("/signup", auth.signup_get);
+authRouter.post("/signup", auth.signup_post);
+authRouter.get("/login", auth.login_get);
+authRouter.post("/login", auth.login_post);
+authRouter.get("/logout", auth.logout);
+app.use("/auth", authRouter);
+
+
+app.get("/", (req, res) => res.redirect("/recipes"));
+
 
 app.get("/recipes", (req, res) => {
   res.render("categories", {
@@ -28,17 +44,14 @@ app.get("/recipes", (req, res) => {
   });
 });
 
+
 app.get("/recipes/:category_id", (req, res) => {
   const category = recipes.getCategory(req.params.category_id);
-  if (category != null) {
-    res.render("category", {
-      title: category.name,
-      category,
-    });
-  } else {
-    res.sendStatus(404);
-  }
+  if (!category) return res.sendStatus(404);
+
+  res.render("category", { title: category.name, category });
 });
+
 
 app.get("/recipes/:category_id/new", (req, res) => {
   res.render("new_recipe", {
@@ -53,42 +66,28 @@ app.get("/recipes/:category_id/new", (req, res) => {
 
 app.post("/recipes/:category_id/new", (req, res) => {
   const category_id = req.params.category_id;
+  if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
 
-  if (!recipes.hasCategory(category_id)) {
-    res.sendStatus(404);
+  const recipe_data = {
+    title: req.body.title,
+    ingredients: req.body.ingredients,
+    instructions: req.body.instructions,
+  };
+
+  const errors = recipes.validateRecipeData(recipe_data);
+
+  if (errors.length === 0) {
+    recipes.addRecipe(category_id, recipe_data);
+    res.redirect(`/recipes/${category_id}`);
   } else {
-    let recipe_data = {
-      title: req.body.title,
+    res.status(400).render("new_recipe", {
+      errors,
+      title: "Nowy przepis",
+      category: { id: category_id },
+      title_value: req.body.title,
       ingredients: req.body.ingredients,
       instructions: req.body.instructions,
-    };
-
-    var errors = recipes.validateRecipeData(recipe_data);
-
-    if (errors.length == 0) {
-      recipes.addRecipe(category_id, recipe_data);
-      res.redirect(`/recipes/${category_id}`);
-    } else {
-      res.status(400);
-      res.render("new_recipe", {
-        errors,
-        title: "Nowy przepis",
-        category: { id: category_id },
-        title_value: req.body.title,
-        ingredients: req.body.ingredients,
-        instructions: req.body.instructions,
-      });
-    }
-  }
-});
-app.post("/recipes/:category_id/:recipe_id/delete", (req, res) => {
-  const { category_id, recipe_id } = req.params;
-
-  if (!recipes.hasCategory(category_id)) {
-    res.sendStatus(404);
-  } else {
-    recipes.deleteRecipe(recipe_id);
-    res.redirect(`/recipes/${category_id}`);
+    });
   }
 });
 
@@ -100,12 +99,7 @@ app.get("/recipes/:category_id/:recipe_id/edit", (req, res) => {
   const recipe = recipes.getRecipe(Number(recipe_id));
   if (!recipe) return res.sendStatus(404);
 
-  res.render("recipe_edit", {
-    title: "Edytuj przepis",
-    recipe,
-    category_id,
-    errors: [],
-  });
+  res.render("recipe_edit", { title: "Edytuj przepis", recipe, category_id, errors: [] });
 });
 
 app.post("/recipes/:category_id/:recipe_id/edit", (req, res) => {
@@ -119,10 +113,9 @@ app.post("/recipes/:category_id/:recipe_id/edit", (req, res) => {
   };
 
   const errors = recipes.validateRecipeData(updated);
-
   if (errors.length > 0) {
     return res.status(400).render("recipe_edit", {
-      title: "edytuj przepis",
+      title: "Edytuj przepis",
       recipe: { id: recipe_id, ...updated },
       category_id,
       errors,
@@ -133,6 +126,13 @@ app.post("/recipes/:category_id/:recipe_id/edit", (req, res) => {
   res.redirect(`/recipes/${category_id}`);
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+app.post("/recipes/:category_id/:recipe_id/delete", (req, res) => {
+  const { category_id, recipe_id } = req.params;
+  if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
+
+  recipes.deleteRecipe(Number(recipe_id));
+  res.redirect(`/recipes/${category_id}`);
 });
+
+
+app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));

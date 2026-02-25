@@ -1,0 +1,13 @@
+<h1>Logowanie</h1>
+
+<% errors.forEach(e => { %>
+  <p style="color:red;"><%= e %></p>
+<% }) %>
+
+<form method="POST">
+  <input name="username" placeholder="login" />
+  <input type="password" name="password" placeholder="hasło" />
+  <button>Zaloguj</button>
+</form>
+
+<a href="/auth/signup">Rejestracja</a>

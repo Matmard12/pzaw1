@@ -1,0 +1,38 @@
+import { createUser, validatePassword } from "../models/user.js";
+import { createSession, deleteSession } from "../models/session.js";
+
+function signup_get(req, res) {
+  res.render("register", { errors: [] });
+}
+
+function signup_post(req, res) {
+  const { username, password } = req.body;
+  if (!username || !password) return res.render("register", { errors: ["Wszystkie pola są wymagane"] });
+
+  const user = createUser(username, password);
+  if (!user) return res.render("register", { errors: ["Użytkownik już istnieje"] });
+
+  createSession(user.id, res);
+  res.redirect("/");
+}
+
+function login_get(req, res) {
+  res.render("login", { errors: [] });
+}
+
+function login_post(req, res) {
+  const { username, password } = req.body;
+  const userId = validatePassword(username, password);
+  if (!userId) return res.render("login", { errors: ["Niepoprawne dane"] });
+
+  createSession(userId, res);
+  res.redirect("/");
+}
+
+function logout(req, res) {
+  deleteSession(req, res);
+  res.redirect("/");
+}
+
+const auth = { signup_get, signup_post, login_get, login_post, logout };
+export default auth;
