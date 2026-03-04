@@ -12,7 +12,7 @@ function signup_post(req, res) {
   const user = createUser(username, password);
   if (!user) return res.render("register", { errors: ["Użytkownik już istnieje"] });
 
-  createSession(user.id, res);
+  createSession(user, res);
   res.redirect("/");
 }
 

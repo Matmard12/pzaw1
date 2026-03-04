@@ -20,6 +20,12 @@ app.use(session.sessionHandler);
 
 
 app.use((req, res, next) => {
+  res.locals.isLoggedIn = req.session && req.session.user ? true : false;
+  next();
+});
+
+
+app.use((req, res, next) => {
   console.log(`Request ${req.method} ${req.path}`);
   next();
 });
@@ -34,7 +40,6 @@ authRouter.get("/logout", auth.logout);
 app.use("/auth", authRouter);
 
 
-app.get("/", (req, res) => res.redirect("/recipes"));
 
 
 app.get("/recipes", (req, res) => {
