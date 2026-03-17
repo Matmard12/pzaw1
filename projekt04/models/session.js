@@ -27,8 +27,10 @@ export function deleteSession(req, res) {
 export function sessionHandler(req, res, next) {
   const session = getSession(req);
   req.session = session ? session : {}; 
+  
   res.locals.isLoggedIn = !!req.session.user;
   res.locals.username = req.session.user ? req.session.user.username : null;
+  res.locals.userRole = req.session.user ? req.session.user.role : null;
   
   next();
 }

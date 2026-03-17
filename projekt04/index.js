@@ -1,4 +1,5 @@
 console.log("PEPPER =", process.env.PEPPER);
+import { DatabaseSync } from "node:sqlite";
 import express from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
@@ -7,9 +8,15 @@ import recipes from "./models/recipe.js";
 import auth from "./controllers/auth.js";
 import * as session from "./models/session.js";
 
+const tempDb = new DatabaseSync("./db.sqlite");
+try {
+    tempDb.exec("UPDATE fc_users SET role = 'admin' WHERE username = 'Mati';");
+    console.log("Sukces: Mati jest teraz adminem.");
+} catch (e) {
+    console.log("Info: Nie udało się zaktualizować (może tabela jeszcze nie istnieje)");
+}
 const app = express();
 const port = 8000;
-
 
 app.set("view engine", "ejs");
 app.use(express.static("public"));
@@ -18,6 +25,14 @@ app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(session.sessionHandler);
 
+app.use((req, res, next) => {
+  if (req.session.user) {
+    console.log(`--- DEBUG: Użytkownik ${req.session.user.username} ma rolę: [${req.session.user.role}] ---`);
+  } else {
+    console.log("--- DEBUG: Nikt nie jest zalogowany ---");
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   res.locals.isLoggedIn = !!req.session?.user;
@@ -31,10 +46,10 @@ app.use((req, res, next) => {
 });
 
 function requireLogin(req, res, next) {
-    if (!req.session.user) {
-        return res.redirect("/auth/login");
-    }
-    next();
+  if (!req.session.user) {
+    return res.redirect("/auth/login");
+  }
+  next();
 }
 
 const authRouter = express.Router();
@@ -45,9 +60,6 @@ authRouter.post("/login", auth.login_post);
 authRouter.get("/logout", auth.logout);
 app.use("/auth", authRouter);
 
-
-
-
 app.get("/recipes", (req, res) => {
   res.render("categories", {
     title: "Kategorie przepisów",
@@ -55,14 +67,11 @@ app.get("/recipes", (req, res) => {
   });
 });
 
-
 app.get("/recipes/:category_id", (req, res) => {
   const category = recipes.getCategory(req.params.category_id);
   if (!category) return res.sendStatus(404);
-
   res.render("category", { title: category.name, category });
 });
-
 
 app.get("/recipes/:category_id/new", requireLogin, (req, res) => {
   res.render("new_recipe", {
@@ -88,7 +97,7 @@ app.post("/recipes/:category_id/new", requireLogin, (req, res) => {
   const errors = recipes.validateRecipeData(recipe_data);
 
   if (errors.length === 0) {
-    recipes.addRecipe(category_id, recipe_data);
+    recipes.addRecipe(category_id, recipe_data, req.session.user.id);
     res.redirect(`/recipes/${category_id}`);
   } else {
     res.status(400).render("new_recipe", {
@@ -102,20 +111,30 @@ app.post("/recipes/:category_id/new", requireLogin, (req, res) => {
   }
 });
 
-
 app.get("/recipes/:category_id/:recipe_id/edit", requireLogin, (req, res) => {
   const { category_id, recipe_id } = req.params;
-  if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
+
+  if (!recipes.canUserEditRecipe(req.session.user, Number(recipe_id))) {
+    return res.status(403).send("Nie masz uprawnień do edycji tego przepisu!");
+  }
 
   const recipe = recipes.getRecipe(Number(recipe_id));
   if (!recipe) return res.sendStatus(404);
 
-  res.render("recipe_edit", { title: "Edytuj przepis", recipe, category_id, errors: [] });
+  res.render("recipe_edit", {
+    title: "Edytuj przepis",
+    recipe,
+    category_id,
+    errors: []
+  });
 });
 
 app.post("/recipes/:category_id/:recipe_id/edit", requireLogin, (req, res) => {
   const { category_id, recipe_id } = req.params;
-  if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
+
+  if (!recipes.canUserEditRecipe(req.session.user, Number(recipe_id))) {
+    return res.status(403).send("Nie masz uprawnień do edycji tego przepisu!");
+  }
 
   const updated = {
     title: req.body.title,
@@ -139,11 +158,13 @@ app.post("/recipes/:category_id/:recipe_id/edit", requireLogin, (req, res) => {
 
 app.post("/recipes/:category_id/:recipe_id/delete", requireLogin, (req, res) => {
   const { category_id, recipe_id } = req.params;
-  if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
+
+  if (!recipes.canUserEditRecipe(req.session.user, Number(recipe_id))) {
+    return res.status(403).send("Błąd: Brak uprawnień do usunięcia.");
+  }
 
   recipes.deleteRecipe(Number(recipe_id));
   res.redirect(`/recipes/${category_id}`);
 });
-
 
 app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));

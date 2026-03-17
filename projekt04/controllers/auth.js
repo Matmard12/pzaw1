@@ -43,5 +43,24 @@ function logout(req, res) {
   res.redirect("/");
 }
 
+export function canEdit(req, res, next) {
+  const user = req.session.user;
+  
+  if (!user) {
+    return res.redirect("/auth/login");
+  }
+  const resourceId = req.params.id;
+  const recipe = getRecipeById(resourceId); 
+
+  if (!recipe) {
+    return res.status(404).send("Nie znaleziono treści");
+  }
+
+  if (user.role === 'admin' || user.id === recipe.author_id) {
+    return next();
+  }
+
+  return res.status(403).send("Nie masz uprawnień do edycji tej treści!");
+}
 const auth = { signup_get, signup_post, login_get, login_post, logout };
 export default auth;
