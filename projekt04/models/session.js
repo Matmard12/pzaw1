@@ -3,9 +3,12 @@ import crypto from "crypto";
 const sessions = {};
 const COOKIE_NAME = "session_id";
 
-export function createSession(userId, res) {
+export function createSession(user, res) {
   const sessionId = crypto.randomBytes(16).toString("hex");
-  sessions[sessionId] = { userId, createdAt: Date.now() };
+  sessions[sessionId] = { 
+    user: user,
+    createdAt: Date.now() 
+  };
   res.cookie(COOKIE_NAME, sessionId, { httpOnly: true });
 }
 
@@ -23,6 +26,9 @@ export function deleteSession(req, res) {
 
 export function sessionHandler(req, res, next) {
   const session = getSession(req);
-  res.locals.userId = session ? session.userId : null;
+  req.session = session ? session : {}; 
+  res.locals.isLoggedIn = !!req.session.user;
+  res.locals.username = req.session.user ? req.session.user.username : null;
+  
   next();
 }

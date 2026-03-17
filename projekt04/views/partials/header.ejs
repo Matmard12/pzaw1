@@ -1,6 +1,6 @@
 <nav>
-  <% if (userId) { %>
-    <span>Witaj użytkowniku <%= userId %></span>
+  <% if (isLoggedIn) { %>
+    <span>Witaj, <%= username %>!</span>
     <a href="/auth/logout">Logout</a>
   <% } else { %>
     <a href="/auth/login">Login</a>

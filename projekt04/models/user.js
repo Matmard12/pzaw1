@@ -49,11 +49,19 @@ export async function createUser(username, password) {
 }
 
 export async function validatePassword(username, password) {
-  const auth_data = db_ops.get_auth_data.get(username);
-  if (auth_data) {
-    const valid = await bcrypt.compare(password + PEPPER, auth_data.passhash);
-    if (valid) return auth_data.id;
+  const authData = db_ops.get_auth_data.get(username);
+
+  if (!authData) {
+    console.log(`Logowanie nieudane: Użytkownik ${username} nie istnieje.`);
+    return null; 
   }
+
+  const isPasswordCorrect = await bcrypt.compare(password + PEPPER, authData.passhash);
+
+  if (isPasswordCorrect) {
+    return db_ops.get_user.get(authData.id);
+  }
+  console.log(`Logowanie nieudane: Błędne hasło dla ${username}.`);
   return null;
 }
 

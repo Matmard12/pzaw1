@@ -20,16 +20,22 @@ app.use(session.sessionHandler);
 
 
 app.use((req, res, next) => {
-  res.locals.isLoggedIn = req.session && req.session.user ? true : false;
+  res.locals.isLoggedIn = !!req.session?.user;
+  res.locals.username = req.session?.user?.username || null;
   next();
 });
-
 
 app.use((req, res, next) => {
   console.log(`Request ${req.method} ${req.path}`);
   next();
 });
 
+function requireLogin(req, res, next) {
+    if (!req.session.user) {
+        return res.redirect("/auth/login");
+    }
+    next();
+}
 
 const authRouter = express.Router();
 authRouter.get("/signup", auth.signup_get);
@@ -58,7 +64,7 @@ app.get("/recipes/:category_id", (req, res) => {
 });
 
 
-app.get("/recipes/:category_id/new", (req, res) => {
+app.get("/recipes/:category_id/new", requireLogin, (req, res) => {
   res.render("new_recipe", {
     errors: [],
     title: "Nowy przepis",
@@ -69,7 +75,7 @@ app.get("/recipes/:category_id/new", (req, res) => {
   });
 });
 
-app.post("/recipes/:category_id/new", (req, res) => {
+app.post("/recipes/:category_id/new", requireLogin, (req, res) => {
   const category_id = req.params.category_id;
   if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
 
@@ -97,7 +103,7 @@ app.post("/recipes/:category_id/new", (req, res) => {
 });
 
 
-app.get("/recipes/:category_id/:recipe_id/edit", (req, res) => {
+app.get("/recipes/:category_id/:recipe_id/edit", requireLogin, (req, res) => {
   const { category_id, recipe_id } = req.params;
   if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
 
@@ -107,7 +113,7 @@ app.get("/recipes/:category_id/:recipe_id/edit", (req, res) => {
   res.render("recipe_edit", { title: "Edytuj przepis", recipe, category_id, errors: [] });
 });
 
-app.post("/recipes/:category_id/:recipe_id/edit", (req, res) => {
+app.post("/recipes/:category_id/:recipe_id/edit", requireLogin, (req, res) => {
   const { category_id, recipe_id } = req.params;
   if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
 
@@ -131,7 +137,7 @@ app.post("/recipes/:category_id/:recipe_id/edit", (req, res) => {
   res.redirect(`/recipes/${category_id}`);
 });
 
-app.post("/recipes/:category_id/:recipe_id/delete", (req, res) => {
+app.post("/recipes/:category_id/:recipe_id/delete", requireLogin, (req, res) => {
   const { category_id, recipe_id } = req.params;
   if (!recipes.hasCategory(category_id)) return res.sendStatus(404);
 
