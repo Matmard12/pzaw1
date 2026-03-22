@@ -8,13 +8,6 @@ import recipes from "./models/recipe.js";
 import auth from "./controllers/auth.js";
 import * as session from "./models/session.js";
 
-const tempDb = new DatabaseSync("./db.sqlite");
-try {
-    tempDb.exec("UPDATE fc_users SET role = 'admin' WHERE username = 'Mati';");
-    console.log("Sukces: Mati jest teraz adminem.");
-} catch (e) {
-    console.log("Info: Nie udało się zaktualizować (może tabela jeszcze nie istnieje)");
-}
 const app = express();
 const port = 8000;
 
@@ -51,6 +44,10 @@ function requireLogin(req, res, next) {
   }
   next();
 }
+
+app.get("/", (req, res) => {
+  res.redirect("/recipes");
+});
 
 const authRouter = express.Router();
 authRouter.get("/signup", auth.signup_get);

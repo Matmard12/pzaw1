@@ -12,33 +12,40 @@ db.exec(`
   ) STRICT;
 `);
 
-
-export function createUser(username, password) {
+export function createUser(username, password, role = 'user') {
   const saltRounds = 10;
   const hashedPassword = bcrypt.hashSync(password, saltRounds);
 
   try {
     const stmt = db.prepare(`
       INSERT INTO fc_users (username, password, role) 
-      VALUES (?, ?, 'user') 
+      VALUES (?, ?, ?) 
       RETURNING id, username, role;
     `);
-    return stmt.get(username, hashedPassword);
+    return stmt.get(username, hashedPassword, role);
   } catch (err) {
-
-    console.error("Błąd podczas tworzenia użytkownika:", err.message);
     return null;
   }
 }
 
+const userCheck = db.prepare("SELECT COUNT(*) as count FROM fc_users").get();
+
+if (userCheck.count === 0) {
+  console.log("tworzenie startowych uzytkownikow");
+
+  createUser("admin", "changeme", "admin");
+  
+  createUser("user1", "changeme", "user");
+  
+  console.log("Konta startowe (admin, user1, user2) zostały utworzone.");
+}
 
 export async function validatePassword(username, password) {
   const stmt = db.prepare("SELECT id, username, password, role FROM fc_users WHERE username = ?");
   const user = stmt.get(username);
 
-  if (!user) {
-    return null; 
-  }
+  if (!user) return null;
+  
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (isMatch) {
@@ -48,7 +55,6 @@ export async function validatePassword(username, password) {
       role: user.role
     };
   }
-
   return null;
 }
 

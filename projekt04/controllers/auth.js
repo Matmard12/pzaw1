@@ -22,19 +22,16 @@ function login_get(req, res) {
 
 export async function login_post(req, res) {
   const { username, password } = req.body;
-
   try {
     const user = await validatePassword(username, password);
-
     if (!user) {
       return res.render("login", { errors: ["Niepoprawny login lub hasło"] });
     }
 
     createSession(user, res);
     res.redirect("/");
-    
   } catch (err) {
-    console.error("Błąd podczas logowania:", err);
+    console.error(err);
     res.status(500).send("Błąd serwera");
   }
 }
