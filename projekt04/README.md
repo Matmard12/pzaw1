@@ -1,0 +1,1 @@
+sklonować z githuba nastepnie w terminalu wpisać komendę npm install a potem npm start
