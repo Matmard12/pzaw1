@@ -13,7 +13,7 @@ function signup_post(req, res) {
   if (!user) return res.render("register", { errors: ["Użytkownik już istnieje"] });
 
   createSession(user, res);
-  res.redirect("/");
+  res.redirect("/recipes");
 }
 
 function login_get(req, res) {
@@ -29,7 +29,7 @@ export async function login_post(req, res) {
     }
 
     createSession(user, res);
-    res.redirect("/");
+    res.redirect("/recipes");
   } catch (err) {
     console.error(err);
     res.status(500).send("Błąd serwera");
@@ -37,7 +37,7 @@ export async function login_post(req, res) {
 }
 function logout(req, res) {
   deleteSession(req, res);
-  res.redirect("/");
+  res.redirect("/recipes");
 }
 
 export function canEdit(req, res, next) {

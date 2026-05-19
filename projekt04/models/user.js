@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import bcrypt from "bcrypt";
+import argon2 from "argon2";
 
 const db = new DatabaseSync("./db.sqlite");
 
@@ -12,9 +12,8 @@ db.exec(`
   ) STRICT;
 `);
 
-export function createUser(username, password, role = 'user') {
-  const saltRounds = 10;
-  const hashedPassword = bcrypt.hashSync(password, saltRounds);
+export async function createUser(username, password, role = 'user') {
+  const hashedPassword = await argon2.hash(password);
 
   try {
     const stmt = db.prepare(`
@@ -33,11 +32,11 @@ const userCheck = db.prepare("SELECT COUNT(*) as count FROM fc_users").get();
 if (userCheck.count === 0) {
   console.log("tworzenie startowych uzytkownikow");
 
-  createUser("admin", "changeme", "admin");
+  await createUser("admin", "changeme", "admin");
   
-  createUser("user1", "changeme", "user");
+  await createUser("user1", "changeme", "user");
   
-  console.log("Konta startowe (admin, user1, user2) zostały utworzone.");
+  console.log("Konta startowe (admin, user1) zostały utworzone.");
 }
 
 export async function validatePassword(username, password) {
@@ -46,7 +45,7 @@ export async function validatePassword(username, password) {
 
   if (!user) return null;
   
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await argon2.verify(user.password, password);
 
   if (isMatch) {
     return {
